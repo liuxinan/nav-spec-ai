@@ -1,4 +1,4 @@
-# NavSpec AI — 车载导航领域智能需求工程流水线
+# NavSpec AI — 车载导航领域智能需求工程
 
 一句话需求 → DDD 领域设计 → SDD 软件设计 → 自动编码 → 编译仲裁 → 规约评审，全程可人工介入、可回放、零第三方依赖。
 
@@ -46,40 +46,6 @@ NavSpec AI 用一条**带人工门禁与双重仲裁的流水线**解决上述�
 - 编译失败 → 错误结构化回灌，Agent 增量修复；
 - 评审判负（以 SDD 契约与 Given/When/Then 验收标准为基准）→ 意见回灌，增量修复；
 - 失败运行可 `resume`：跳过 DDD/SDD 与人工确认，直接重入编码→编译→评审闭环，省 token 省时间。
-
-### 模块分层
-
-```
-main.py                入口：python main.py 启动 Web 服务（退出码 0 正常 / 3 配置错误）
-app/
-  config.py            配置加载（config.json + 缺失字段早失败校验）
-  web.py               Web 层：纯标准库 http.server，前后端零构建链
-  pipeline.py          流水线状态机：运行注册表、人工门禁信令、有界回灌、resume
-  stages.py            各阶段实现：扫描 / DDD / SDD / 编码 / 编译 / 评审
-  agent.py             LiteAgent：自研轻量编码 Agent（工具模式 + 文本协议降级）
-  tools.py             受控工具箱：路径沙箱、命令超时、白名单路由、修改追踪
-  llm.py               OpenAI 兼容 LLM 客户端（urllib 直连，支持代理）
-  runstore.py          运行持久化：runs/<id>/ 落盘，可回放可审计
-web/index.html         前端单页（原生 HTML/JS，轮询快照渲染，无任何前端框架）
-standards/             LLM 系统提示模板（结构与约束的单一事实来源）
-  ddd_template.md      DDD 生成规范：统一语言表 / 领域模型 / 限界上下文 / 领域事件 / 业务规则 / 待人工确认项
-  sdd_template.md      SDD 生成规范：改动总览 / 模块设计 / 接口契约 / 数据流 / 验收标准(BDD)
-  coding.md            编码 Agent 行为规范
-  review.md            规约对照评审准则（只读，输出 JSON 裁决）
-runs/<id>/             每次运行的落盘产物（运行时生成）
-docs/                  方案材料：PPT、研究报告、测试用例
-```
-
-### Web API
-
-| 方法 | 路由 | 说明 |
-|---|---|---|
-| GET | `/api/config` | 前端展示用配置（不回传 apiKey） |
-| POST | `/api/runs` | 提交一句话需求，创建运行 |
-| GET | `/api/runs` | 运行列表 |
-| GET | `/api/runs/<id>` | 运行状态快照（前端轮询） |
-| POST | `/api/runs/<id>/gate` | 人工确认 / 驳回（驳回必须填意见） |
-| POST | `/api/runs/<id>/resume` | 从失败处恢复（跳过文档阶段，直入编码闭环） |
 
 ## 3. 关键技术点
 
@@ -148,9 +114,3 @@ events.ndjson               事件日志（追加写入）
 diff.patch                  目标工程的全部代码改动
 result.json                 终态结果（程序化消费）
 ```
-
-## 5. 相关文档
-
-- `docs/NavSpec AI：车载导航领域智能需求工程方案.pptx` — 方案整体汇报材料
-- `docs/领域知识增强对DDD规约生成质量的影响研究.md` — 领域知识增强对 DDD 规约质量影响的对比实验研究
-- `docs/增加途径点-测试用例/` — 完整端到端示例（DDD/SDD 文档、代码修改示例、演示视频）
