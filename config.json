@@ -1,0 +1,22 @@
+{
+  "llm": {
+    "baseUrl": "https://api.deepseek.com",
+    "apiKey": "sk-6f18de71ce3545ca889ec302f1b7f408",
+    "model": "deepseek-v4-flash",
+    "temperature": 0.3,
+    "proxy": "http://liuxinan:Haidao_123@192.168.2.78:8080"
+  },
+  "target": {
+    "workdir": "E:\\code\\web-navi-demo-old\\web-navi-demo",
+    "compileCmd": "npm run build"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "limits": {
+    "compileRetries": 2,
+    "reviewRetries": 1,
+    "regenLimit": 2
+  }
+}

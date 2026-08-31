@@ -1,0 +1,22 @@
+{
+  "llm": {
+    "baseUrl": "https://api.example.com/v1",
+    "apiKey": "sk-请填写",
+    "model": "请填写模型名",
+    "temperature": 0.3,
+    "proxy": "http://liuxinan:Haidao_123@192.168.2.78:8080"
+  },
+  "target": {
+    "workdir": "E:\\path\\to\\your\\nav-project",
+    "compileCmd": "npm run build"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "limits": {
+    "compileRetries": 2,
+    "reviewRetries": 1,
+    "regenLimit": 2
+  }
+}

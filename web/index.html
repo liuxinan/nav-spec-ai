@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NavSpec AI · 车载导航智能需求工程流水线</title>
+<style>
+:root{
+  --bg:#0f1419;--panel:#161d27;--line:#263041;--fg:#d7e0ea;--dim:#8a97a8;
+  --accent:#4f9cff;--ok:#3ecf8e;--warn:#f0b429;--err:#ff6b6b;--mono:Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;height:100vh;display:flex;flex-direction:column}
+header{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px}
+header h1{font-size:18px;color:var(--accent)}
+header .sub{color:var(--dim);font-size:12px}
+#cfgbar{padding:6px 20px;border-bottom:1px solid var(--line);color:var(--dim);font-size:12px;font-family:var(--mono);background:var(--panel)}
+main{flex:1;display:flex;overflow:hidden}
+#left{width:330px;border-right:1px solid var(--line);padding:16px;overflow-y:auto;flex-shrink:0}
+#right{flex:1;overflow-y:auto;padding:20px 26px}
+h2{font-size:14px;color:var(--dim);margin-bottom:10px;letter-spacing:1px}
+textarea,input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:8px;font:13px var(--mono)}
+textarea{resize:vertical}
+button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer;margin-top:10px}
+button:hover{filter:brightness(1.15)}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--dim)}
+button.warn{background:var(--warn);color:#222}
+button.ok{background:var(--ok);color:#062}
+button:disabled{opacity:.45;cursor:not-allowed}
+#runs{margin-top:22px}
+.runitem{padding:9px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;cursor:pointer;font-size:12px}
+.runitem:hover,.runitem.active{border-color:var(--accent)}
+.runitem .rid{color:var(--dim);font-family:var(--mono)}
+.runitem .rr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;margin-left:6px}
+.tag.running{background:#1c3049;color:var(--accent)}
+.tag.waiting{background:#3a2f12;color:var(--warn)}
+.tag.done-ok{background:#12331f;color:var(--ok)}
+.tag.done-err{background:#3a1616;color:var(--err)}
+/* 步骤时间线 */
+#steps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.step{padding:5px 12px;border-radius:16px;border:1px solid var(--line);font-size:12px;color:var(--dim)}
+.step.done{border-color:#1d5c3c;color:var(--ok)}
+.step.done::before{content:"✓ "}
+.step.active{border-color:var(--accent);color:var(--accent);background:#12233a}
+.step.active::before{content:"▶ "}
+/* 区块 */
+.block{border:1px solid var(--line);border-radius:8px;margin-bottom:16px;background:var(--panel)}
+.block>h3{padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;color:var(--accent)}
+.block>div{padding:12px 14px}
+#events{font:12px var(--mono);max-height:280px;overflow-y:auto}
+#events .e{padding:2px 0;border-bottom:1px dashed #1d2634;white-space:pre-wrap;word-break:break-all}
+#events .e .t{color:#5a6a80}
+#events .e.warn{color:var(--warn)}
+#events .e.error{color:var(--err)}
+#docarea textarea{min-height:380px}
+/* Markdown 渲染视图 */
+.mdview{font:13px/1.75 "Segoe UI","Microsoft YaHei",sans-serif;color:var(--fg);max-height:460px;overflow-y:auto;padding:4px 6px}
+.mdview h1{font-size:19px;color:var(--accent);margin:16px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.mdview h2{font-size:16px;color:#7ab8ff;margin:14px 0 8px}
+.mdview h3{font-size:14px;color:#9cc8ff;margin:12px 0 6px}
+.mdview h4,.mdview h5,.mdview h6{font-size:13px;color:var(--fg);margin:10px 0 6px}
+.mdview p{margin:6px 0}
+.mdview ul,.mdview ol{margin:6px 0 6px 22px}
+.mdview li{margin:2px 0}
+.mdview code{font-family:var(--mono);background:#1b2432;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-size:12px;color:#ffca7a}
+.mdview pre{background:#121a26;border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:8px 0;overflow-x:auto}
+.mdview pre code{background:none;border:0;padding:0;color:#b6c2d0}
+.mdview blockquote{border-left:3px solid var(--accent);margin:8px 0;padding:4px 12px;color:var(--dim);background:#141d2b}
+.mdview hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.mdview table{border-collapse:collapse;margin:8px 0;width:100%;font-size:12.5px}
+.mdview th{background:#1c2a3d;color:#9cc8ff;text-align:left}
+.mdview th,.mdview td{border:1px solid var(--line);padding:5px 9px;vertical-align:top}
+.mdview tr:nth-child(even) td{background:#151d29}
+.doctool{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.doctool .muted{flex:1}
+#gatesub{margin-top:12px}
+#rejectbox{margin-top:10px;display:none}
+#diffpre{font:12px var(--mono);white-space:pre-wrap;word-break:break-all;max-height:420px;overflow-y:auto;color:#b6c2d0}
+#banner{display:none;padding:14px;border-radius:8px;margin-bottom:16px;font-size:15px;font-weight:600}
+#banner.ok{background:#10361f;color:var(--ok);display:block}
+#banner.bad{background:#3a1616;color:var(--err);display:block}
+.muted{color:var(--dim);font-size:12px}
+#codeSummary,#verdictBox{font:12px var(--mono);white-space:pre-wrap;word-break:break-all}
+.empty{color:var(--dim);padding:40px;text-align:center}
+label{font-size:12px;color:var(--dim);display:block;margin:8px 0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>NavSpec AI</h1>
+  <span class="sub">车载导航领域 · 一句话需求 → DDD/SDD 规约 → 人工确认 → 规约驱动自动编码 → 编译与评审闭环</span>
+</header>
+<div id="cfgbar"></div>
+<main>
+  <div id="left">
+    <h2>① 提交新需求</h2>
+    <textarea id="requirement" rows="4" placeholder="例如：导航支持添加途经点，比如沿途的充电站，并按途经点顺序重新规划路线"></textarea>
+    <button id="submitBtn">启动流水线</button>
+    <div id="runs"><h2>历史运行</h2><div id="runlist"><div class="muted">暂无</div></div></div>
+  </div>
+  <div id="right"><div class="empty">提交需求后，此处展示逐步转换过程</div></div>
+</main>
+<script>
+let currentId=null, pollTimer=null, lastEventCount=0, gateStage=null, lastSig=null, lastSnap=null;
+let detailsOpen={};  // 记住 details 折叠块的用户手动展开/折叠状态（轮询重渲染间保留）
+
+const STEP_NAMES={scan:"项目扫描",ddd:"DDD 生成",gate_ddd:"人工确认①",sdd:"SDD 生成",gate_sdd:"人工确认②",code:"自动编码",compile:"编译仲裁",review:"规约评审",final:"终态"};
+
+async function api(path,opts){const r=await fetch(path,opts);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j;}
+
+function el(id){return document.getElementById(id)}
+
+async function init(){
+  const cfg=await api('/api/config');
+  el('cfgbar').textContent=`目标工程 ${cfg.workdir}  |  编译命令 ${cfg.compileCmd}  |  模型 ${cfg.model}  |  编译重试≤${cfg.limits.compileRetries} 评审重试≤${cfg.limits.reviewRetries}`;
+  el('submitBtn').onclick=submit;
+  refreshList();
+}
+async function refreshList(){
+  const list=await api('/api/runs');
+  const box=el('runlist');
+  if(!list.length){box.innerHTML='<div class="muted">暂无</div>';return}
+  box.innerHTML='';
+  list.forEach(r=>{
+    const d=document.createElement('div');
+    d.className='runitem'+(r.id===currentId?' active':'');
+    const cls=r.status==='running'?'running':(r.status==='waiting'?'waiting':(r.outcome==='ok'?'done-ok':'done-err'));
+    d.innerHTML=`<div class="rid">${r.id} <span class="tag ${cls}">${r.status==='done'?(r.outcome||'done'):r.status}</span></div><div class="rr">${esc(r.requirement)}</div>`;
+    d.onclick=()=>selectRun(r.id);
+    box.appendChild(d);
+  });
+}
+async function submit(){
+  const req=el('requirement').value.trim();
+  if(!req){alert('请输入一句话需求');return}
+  try{
+    const r=await api('/api/runs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requirement:req})});
+    el('requirement').value='';
+    selectRun(r.id);
+  }catch(e){alert('提交失败：'+e.message)}
+}
+function selectRun(id){
+  currentId=id;lastEventCount=0;gateStage=null;lastSig=null;lastSnap=null;docModes={};rawDocs={};docBase={};detailsOpen={};
+  if(pollTimer)clearInterval(pollTimer);
+  pollTimer=setInterval(poll,1200);
+  poll();refreshList();
+}
+async function poll(){
+  if(!currentId)return;
+  let s;
+  try{s=await api('/api/runs/'+currentId)}
+  catch(e){
+    if(String(e.message).includes('404')){  // 运行不存在：停止轮询，避免无限 404
+      if(pollTimer){clearInterval(pollTimer);pollTimer=null}
+      el('right').innerHTML='<div class="empty">运行不存在（服务可能已重启且该运行未被持久化）</div>';
+    }
+    return
+  }
+  // 快照无变化时跳过重渲染：否则轮询会不断重置滚动位置、
+  // 并覆盖人工确认环节中用户正在编辑的文本框
+  const sig=JSON.stringify(s);
+  if(sig===lastSig)return;
+  lastSig=sig;
+  lastSnap=s;
+  render(s);
+  if(s.status==='done'){clearInterval(pollTimer);pollTimer=null;refreshList();}
+}
+function esc(t){return String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ============ 迷你 Markdown 渲染器（原生实现，零外部依赖） ============ */
+function mdInline(t){
+  t=esc(t);
+  t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  t=t.replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<em>$2</em>');
+  return t;
+}
+function mdRender(src){
+  const lines=String(src||'').split(/\r?\n/);
+  const out=[];let i=0;
+  const isBlockStart=l=>/^(#{1,6}\s|```|\s*[-*+]\s|\s*\d+[.、)]\s|\s*\||\s*>|\s*(---+|\*\*\*+)\s*$)/.test(l);
+  while(i<lines.length){
+    const line=lines[i];
+    let m;
+    if(/^```/.test(line.trim())){
+      const buf=[];i++;
+      while(i<lines.length&&!/^```/.test(lines[i].trim())){buf.push(lines[i]);i++;}
+      i++;out.push('<pre><code>'+esc(buf.join('\n'))+'</code></pre>');continue;
+    }
+    if(m=line.match(/^(#{1,6})\s+(.*)/)){
+      const h=m[1].length;out.push('<h'+h+'>'+mdInline(m[2])+'</h'+h+'>');i++;continue;
+    }
+    if(/^\s*(---+|\*\*\*+)\s*$/.test(line)){out.push('<hr>');i++;continue;}
+    if(/^\s*[-*+]\s+/.test(line)){
+      const items=[];
+      while(i<lines.length&&/^\s*[-*+]\s+/.test(lines[i])){items.push('<li>'+mdInline(lines[i].replace(/^\s*[-*+]\s+/,''))+'</li>');i++;}
+      out.push('<ul>'+items.join('')+'</ul>');continue;
+    }
+    if(/^\s*\d+[.、)]\s+/.test(line)){
+      const items=[];
+      while(i<lines.length&&/^\s*\d+[.、)]\s+/.test(lines[i])){items.push('<li>'+mdInline(lines[i].replace(/^\s*\d+[.、)]\s+/,''))+'</li>');i++;}
+      out.push('<ol>'+items.join('')+'</ol>');continue;
+    }
+    // 表格：当前行以 | 开头且下一行是分隔行
+    if(/^\s*\|/.test(line)&&i+1<lines.length&&/^\s*\|?[\s:|\-]+\|[\s:|\-]*$/.test(lines[i+1])){
+      const rows=[];
+      while(i<lines.length&&/^\s*\|/.test(lines[i])){rows.push(lines[i]);i++;}
+      const cells=r=>r.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(c=>mdInline(c.trim()));
+      const header=cells(rows[0]);
+      const body=rows.slice(2).map(r=>'<tr>'+cells(r).map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('');
+      out.push('<table><thead><tr>'+header.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table>');
+      continue;
+    }
+    if(/^\s*>\s?/.test(line)){
+      const buf=[];
+      while(i<lines.length&&/^\s*>\s?/.test(lines[i])){buf.push(mdInline(lines[i].replace(/^\s*>\s?/,'')));i++;}
+      out.push('<blockquote>'+buf.join('<br>')+'</blockquote>');continue;
+    }
+    if(!line.trim()){i++;continue;}
+    // 段落：合并连续普通行
+    const buf=[line];i++;
+    while(i<lines.length&&lines[i].trim()&&!isBlockStart(lines[i])){buf.push(lines[i]);i++;}
+    out.push('<p>'+buf.map(mdInline).join('<br>')+'</p>');
+  }
+  return out.join('\n');
+}
+
+/* ============ 文档双模式组件（预览 / 编辑） ============ */
+let docModes={};   // key -> 'view' | 'edit'（切换状态在轮询重渲染间保留）
+let rawDocs={};    // key -> 当前文本（编辑内容在模式切换与确认时保留）
+let docBase={};    // key -> 服务端最新内容（仅当服务端内容变化时才重置 rawDocs）
+function docView(key,content,editable){
+  if(docBase[key]!==content){docBase[key]=content;rawDocs[key]=content;}
+  const text=rawDocs[key];
+  const mode=docModes[key]||'view';
+  const toolbar=editable?`<div class="doctool"><span class="muted">${mode==='view'?'渲染预览（点右侧按钮切为源码编辑）':'源码编辑（Markdown 语法）'}</span><button class="ghost mdtoggle" data-key="${key}" style="margin:0">${mode==='view'?'✏️ 编辑源码':'👁 渲染预览'}</button></div>`:'';
+  const body=mode==='edit'
+    ?`<textarea id="${key}TA" rows="18" data-doc="${key}">${esc(text)}</textarea>`
+    :`<div class="mdview" id="${key}MV">${mdRender(text)}</div>`;
+  return toolbar+body;
+}
+
+function render(s){
+  const r=el('right');
+  const keepTop=r.scrollTop;  // 重渲染前保存滚动位置（运行阶段事件增长时仍会重绘）
+  // 步骤时间线
+  let steps='<div id="steps">'+s.steps.map(st=>`<div class="step ${st.state}">${STEP_NAMES[st.key]||st.key}</div>`).join('')+'</div>';
+  // 终态横幅（含"从失败处继续"按钮）
+  let banner='';
+  if(s.outcome){
+    const good=s.outcome==='ok';
+    const canResume=!good&&s.outcome!=='rejected'&&s.outcome!=='interrupted'&&s.confirmed.ddd&&s.confirmed.sdd;
+    banner=`<div id="banner" class="${good?'ok':'bad'}">${esc(s.outcomeText)}（DDD 驳回${s.counters.ddd_regen} 次 / SDD 驳回${s.counters.sdd_regen} 次 / 编码 ${s.counters.code_runs} 次）${canResume?'<button id="resumeBtn" style="margin-left:12px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)">从失败处继续</button>':''}</div>`;
+  }
+  // 人工门禁
+  let gate='';
+  if(s.status==='waiting'&&s.gate){
+    gate=renderGate(s);
+  }
+  // 事件流
+  const evs=s.events.map(e=>`<div class="e ${e.level}"><span class="t">${e.ts} [${STEP_NAMES[e.stage]||e.stage}]</span> ${esc(e.msg)}</div>`).join('');
+  // 编码摘要 / 评审 / diff
+  let extra='';
+  if(s.codeSummary)extra+=`<div class="block"><h3>编码 Agent 改动摘要</h3><div id="codeSummary">${esc(s.codeSummary)}</div></div>`;
+  if(s.verdict)extra+=`<div class="block"><h3>规约评审裁决</h3><div id="verdictBox">结论：${s.verdict.pass?'✅ 通过':'❌ 不通过'}\n${(s.verdict.issues||[]).map(i=>'• '+esc(i)).join('\n')||'（无意见）'}</div></div>`;
+  if(s.diff&&s.stage!=='code')extra+=`<div class="block"><h3>目标工程改动（git diff）</h3><div id="diffpre">${esc(s.diff)}</div></div>`;
+  // 文档查看（确认稿优先，渲染为 Markdown 预览）；折叠状态尊重用户手动选择
+  let docs='';
+  const ddd=s.confirmed.ddd||s.docs.ddd,sdd=s.confirmed.sdd||s.docs.sdd;
+  function detailOpen(key, autoOpen){
+    // 用户已手动操作过则尊重用户选择；否则按阶段默认展开
+    if(key in detailsOpen)return detailsOpen[key]?'open':'';
+    return autoOpen?'open':'';
+  }
+  if(ddd)docs+=`<details class="block" ${detailOpen('ddd',s.stage!=='gate_ddd')} data-dkey="ddd"><summary style="padding:10px 14px;cursor:pointer;color:var(--accent)">DDD 领域设计文档 ${s.confirmed.ddd?'（已确认）':'（生成稿）'}</summary><div style="padding:8px 14px 14px"><div class="mdview">${mdRender(ddd)}</div></div></details>`;
+  if(sdd)docs+=`<details class="block" ${detailOpen('sdd',s.stage!=='gate_sdd')} data-dkey="sdd"><summary style="padding:10px 14px;cursor:pointer;color:var(--accent)">SDD 软件设计文档 ${s.confirmed.sdd?'（已确认）':'（生成稿）'}</summary><div style="padding:8px 14px 14px"><div class="mdview">${mdRender(sdd)}</div></div></details>`;
+
+  r.innerHTML=steps+banner+gate+docs+`<div class="block"><h3>流水线事件</h3><div id="events">${evs||'<div class="muted">等待事件…</div>'}</div></div>`+extra;
+  r.scrollTop=keepTop;  // 恢复滚动位置，避免滚动条被重置回顶部
+  const evbox=el('events');if(evbox)evbox.scrollTop=evbox.scrollHeight;
+}
+function renderGate(s){
+  const name=s.gate==='ddd'?'DDD 领域设计文档':'SDD 软件设计文档';
+  return `<div class="block" id="docarea"><h3>⏸ 人工确认环节：${name}</h3><div>
+    <div class="muted">默认渲染预览；点"编辑源码"可修订文档（确认稿将作为编码与评审的唯一依据）；驳回需填写意见，将回灌重新生成。</div>
+    ${docView('gate',s.gateDoc,true)}
+    <div id="gatesub">
+      <button class="ok" id="confirmBtn">确认并放行下一阶段</button>
+      <button class="warn" id="rejectBtn">驳回并重新生成</button>
+    </div>
+    <div id="rejectbox">
+      <label>驳回意见（必填，将回灌给生成阶段）</label>
+      <textarea id="feedback" rows="3" placeholder="例如：限界上下文划分过粗；'附近'应按道路距离而非直线距离；补充电量不足时的异常策略"></textarea>
+      <button id="rejectSubmit">提交驳回</button>
+    </div>
+  </div></div>`;
+}
+// 编辑中的文本实时同步到 rawDocs（防御偶发重渲染丢内容）
+document.addEventListener('input',e=>{
+  const key=e.target.dataset&&e.target.dataset.doc;
+  if(key)rawDocs[key]=e.target.value;
+});
+// 记住用户手动折叠/展开 details 的状态
+document.addEventListener('toggle',e=>{
+  const key=e.target.dataset&&e.target.dataset.dkey;
+  if(key)detailsOpen[key]=e.target.open;
+});
+// 事件委托（gate 按钮与文档组件都是动态渲染的）
+document.addEventListener('click',async e=>{
+  // 文档 预览/编辑 模式切换
+  if(e.target.classList&&e.target.classList.contains('mdtoggle')){
+    const key=e.target.dataset.key;
+    const ta=el(key+'TA');
+    if(ta)rawDocs[key]=ta.value;  // 切走编辑模式前保存用户修改
+    docModes[key]=docModes[key]==='edit'?'view':'edit';
+    if(lastSnap)render(lastSnap);
+  }
+  if(e.target.id==='confirmBtn'){
+    // 编辑模式取文本框实时值，预览模式取 rawDocs（含编辑后又切回预览的内容）
+    const ta=el('gateTA');
+    const content=ta?ta.value:(rawDocs.gate||'');
+    if(!confirm('确认该文档？确认稿将作为后续编码与评审的唯一依据。'))return;
+    await gate('confirm',content,'');
+  }
+  if(e.target.id==='rejectBtn'){el('rejectbox').style.display='block'}
+  if(e.target.id==='resumeBtn'){
+    if(!confirm('从失败处继续？将跳过 DDD/SDD 生成与人工确认，直接重试编码→编译→评审闭环。'))return;
+    try{
+      await api('/api/runs/'+currentId+'/resume',{method:'POST'});
+      // 重置前端状态以重新轮询
+      lastSig=null;lastSnap=null;
+      if(pollTimer)clearInterval(pollTimer);
+      pollTimer=setInterval(poll,1200);
+      poll();
+    }catch(e2){alert('恢复失败：'+e2.message)}
+  }
+  if(e.target.id==='rejectSubmit'){
+    const fb=el('feedback').value.trim();
+    if(!fb){alert('驳回必须填写意见');return}
+    await gate('reject','',fb);
+  }
+});
+async function gate(action,content,feedback){
+  try{
+    await api(`/api/runs/${currentId}/gate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,content,feedback})});
+    poll();refreshList();
+  }catch(e){alert('操作失败：'+e.message)}
+}
+init();
+</script>
+</body>
+</html>
