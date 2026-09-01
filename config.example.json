@@ -4,7 +4,7 @@
     "apiKey": "sk-请填写",
     "model": "请填写模型名",
     "temperature": 0.3,
-    "proxy": "http://liuxinan:Haidao_123@192.168.2.78:8080"
+    "proxy": ""
   },
   "target": {
     "workdir": "E:\\path\\to\\your\\nav-project",

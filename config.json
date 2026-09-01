@@ -1,13 +1,13 @@
 {
   "llm": {
-    "baseUrl": "https://api.deepseek.com",
-    "apiKey": "sk-6f18de71ce3545ca889ec302f1b7f408",
-    "model": "deepseek-v4-flash",
+    "baseUrl": "",
+    "apiKey": "",
+    "model": "",
     "temperature": 0.3,
-    "proxy": "http://liuxinan:Haidao_123@192.168.2.78:8080"
+    "proxy": ""
   },
   "target": {
-    "workdir": "E:\\code\\web-navi-demo-old\\web-navi-demo",
+    "workdir": "",
     "compileCmd": "npm run build"
   },
   "server": {
